@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  spark-ml:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: creditcard-pipeline
+    platform: linux/amd64  # ✅ สำคัญสำหรับ Mac M1/M2/M3
+    ports:
+      - "8888:8888"  # Jupyter (optional)
+      - "4040:4040"  # Spark UI
+    volumes:
+      - ./data:/app/data              # Data (Bronze/Silver/Gold)
+      - ./configs:/app/configs        # Config files
+      - ./models:/app/models          # Saved models
+      - ./src:/app/src                # Source code (hot reload)
+      - ./notebooks:/app/notebooks    # Notebooks (optional)
+    working_dir: /app
+    environment:
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      - SPARK_CLASSPATH=/app/jars/*
+      - PYTHONUNBUFFERED=1

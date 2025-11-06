@@ -1,0 +1,41 @@
+# ===============================
+# 📁 CONFIG FILES
+# ===============================
+configs/
+*.json
+
+# ===============================
+# 📊 DATA FILES
+# ===============================
+data/
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+*.csv
+*.xlsx
+
+# ===============================
+# 🤖 MODELS
+# ===============================
+models/
+models/pipeline/
+models/production/
+*.joblib
+*.pkl
+*.h5
+
+# ===============================
+# ⚙️ PYTHON & SYSTEM FILES
+# ===============================
+__pycache__/
+.ipynb_checkpoints/
+.env
+.DS_Store
+Thumbs.db
+
+# ===============================
+# 🧪 LOGS / TEMP FILES
+# ===============================
+*.log
+tmp/
