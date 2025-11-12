@@ -15,6 +15,7 @@ def run_ingestion(raw_table_name, bronze_table_name, spark):
     bronze_df.write.format("delta").mode(mode).save(bronze_table_name)
 
     bronze_count = bronze_df.count()
+    
     print(f"✅ Bronze table updated: {bronze_table_name}")
     print(f"   Records in this batch: {bronze_count:,}")
 

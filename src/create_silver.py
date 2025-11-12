@@ -8,6 +8,8 @@ def create_silver(bronze_table_name, silver_table_name, spark):
     else:
         bronze_df = spark.table(bronze_table_name) #
 
+    bronze_df = bronze_df.withColumn("create_silver_timestamp", current_timestamp())
+    
     bronze_count = bronze_df.count()
     print(f"📦 Bronze Records ({bronze_table_name}): {bronze_count:,}")
 

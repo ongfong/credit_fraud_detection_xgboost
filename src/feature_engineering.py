@@ -16,7 +16,6 @@ def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spa
     print("\n📄 Loading config...")
     config_adapter = ConfigAdapter(config_path) 
 
-
     config = config_adapter.get_all()
 
     preprocessing = config.get("preprocessing", {})

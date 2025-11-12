@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: creditcard-pipeline
-    platform: linux/amd64  # ✅ สำคัญสำหรับ Mac M1/M2/M3
+    platform: linux/amd64  # for mac m1/m2/m3
     ports:
       - "8888:8888"  # Jupyter (optional)
       - "4040:4040"  # Spark UI

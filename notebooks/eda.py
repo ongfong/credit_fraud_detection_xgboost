@@ -4,10 +4,16 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
+from spark_config import get_local_spark
+
+# Paths
+silver_table = "data/silver/silver_creditcard"
+
+spark = get_local_spark()
 
 # COMMAND ----------
 
-df_spark = spark.table("workspace.bronze.bronze_creditcard")
+df_spark = spark.table(silver_table)
 
 # COMMAND ----------
 

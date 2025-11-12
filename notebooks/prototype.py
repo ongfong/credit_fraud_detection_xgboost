@@ -22,6 +22,12 @@ from datetime import datetime
 import sys
 import sklearn
 import json
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("CreditCardFraud") \
+    .master("local[*]") \
+    .getOrCreate()
 
 # COMMAND ----------
 
