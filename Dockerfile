@@ -23,7 +23,6 @@ RUN java -version
 
 # ========================================
 # Download Spark JARs (Delta Lake + XGBoost)
-# ✅ ส่วนนี้เพิ่มใหม่
 # ========================================
 RUN mkdir -p /app/jars && \
     echo "📦 Downloading Delta Lake JARs..." && \
