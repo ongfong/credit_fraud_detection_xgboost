@@ -112,8 +112,11 @@ def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spa
     print(f"   Test: {test_gold.count():,} records")
     
     # Show sample
+    # print("\n📊 Sample transformed data (first 3 rows):")
+    # train_gold.select(target_col, "Amount", "features").show(3, truncate=False)
     print("\n📊 Sample transformed data (first 3 rows):")
-    train_gold.select(target_col, "Amount", "features").show(3, truncate=False)
+    df_sample = train_gold.select(target_col, "Amount", "features").limit(3).toPandas()
+    print(df_sample)
     
     print(f"\n💾 Saving fitted pipeline to: {pipeline_save_path}")
     os.makedirs(os.path.dirname(pipeline_save_path), exist_ok=True)

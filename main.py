@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession
-from src import ingestion, create_silver, feature_engineering, training
+from src import ingestion, preprocessing, feature_engineering, training
 from delta import configure_spark_with_delta_pip
-from .spark_config import get_local_spark
+from spark_config import get_local_spark
 import sys 
 
 def main():
@@ -36,11 +36,11 @@ def main():
         print("✅ Stage 1 complete\n")
         
         # ========================================
-        # STAGE 2: Silver
+        # STAGE 2: Preprocessing
         # ========================================
-        print("STAGE 2: CREATE SILVER")
+        print("STAGE 2: PREPROCESSING")
         print("-"*70)
-        create_silver.create_silver(bronze_table, silver_table, spark)
+        preprocessing.clean_transactions(bronze_table, silver_table, spark)
         print("✅ Stage 2 complete\n")
         
         # ========================================

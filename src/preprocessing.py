@@ -1,12 +1,12 @@
 from pyspark.sql.functions import col, current_timestamp
 from delta.tables import DeltaTable
 
-def create_silver(bronze_table_name, silver_table_name, spark):
+def clean_transactions(bronze_table_name, silver_table_name, spark):
 
     if DeltaTable.isDeltaTable(spark, bronze_table_name):
         bronze_df = spark.read.format("delta").load(bronze_table_name)
     else:
-        bronze_df = spark.table(bronze_table_name) #
+        bronze_df = spark.table(bronze_table_name)
 
     bronze_df = bronze_df.withColumn("create_silver_timestamp", current_timestamp())
     

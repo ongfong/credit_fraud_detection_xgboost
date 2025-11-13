@@ -116,12 +116,14 @@ def run_training(config_path, train_df, test_df, model_path, spark):
     normal_count = train_df.filter(f"{target_col} = 0").count()
 
     total = train_count + test_count
+    scale_pos_weight = normal_count / fraud_count
 
-    print(f"Train: {train_count:,}")
-    print(f"Test:  {test_count:,}")
     print(f"Total: {total:,}")
-    print(f"fraud_count: {fraud_count:,}")
     print(f"normal_count: {normal_count:,}")
+    print(f"fraud_count: {fraud_count:,}")
+    print(f"Train dataset: {train_count:,}")
+    print(f"Test dataset:  {test_count:,}")
+    print(f"Scale_pos_weight: {scale_pos_weight:,}")
 
     # ========================================
     # 4. Create XGBoost Classifier
@@ -143,8 +145,8 @@ def run_training(config_path, train_df, test_df, model_path, spark):
             prediction_col="prediction",
             num_workers=1,
             use_gpu=False,
+            scale_pos_weight=scale_pos_weight,
             num_boost_round=num_round,
-            scale_pos_weight=250,
             **xgb_params
         )
     except Exception as e:
