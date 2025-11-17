@@ -55,6 +55,21 @@ python -m pip install --upgrade pip; pip install -r requirements.txt
 
 3. Verify the `data/raw/creditcard_raw.csv` exists (the repo contains a sample under `data/raw`).
 
+If you don't have the CSV locally you can download the original dataset from Kaggle and place it at `data/raw/creditcard_raw.csv`.
+
+To download with the Kaggle CLI (recommended):
+
+1. Install and configure the Kaggle CLI following https://www.kaggle.com/docs/api
+2. From the repo root run:
+
+```powershell
+# downloads and unzips the dataset into data/raw/
+kaggle datasets download -d mlg-ulb/creditcardfraud -p data/raw --unzip
+# move/rename if necessary so the file is at data/raw/creditcard_raw.csv
+```
+
+Or download manually from: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+
 ## Run the full pipeline (local)
 
 From the repo root you can run the pipeline entrypoint which will:
@@ -110,22 +125,24 @@ If the test set is large, the training script will skip saving the full predicti
 
 The repository includes a saved metrics file produced by the last training run. Below is a concise snapshot taken from `models/production/xgboost_model/metrics.json`.
 
-- Trained date: 2025-11-13T07:05:48.740307
+- Trained date: 2025-11-17T07:12:54.405349
 - Model: XGBoost (xgboost.spark.SparkXGBClassifier)
 
 Primary evaluation (test set):
 
-- Accuracy: 0.998098
-- Precision: 0.451220
-- Recall: 0.804348
-- F1 score: 0.578125
+- Accuracy: 0.998239
+- Precision: 0.523256
+- Recall: 0.833333  (≈ 0.83 — model recovers ~83% of fraud cases on the test set)
+- F1 score: 0.642857
 
 Confusion matrix (test set):
 
-- True Positive (TP): 74
-- False Positive (FP): 90
-- True Negative (TN): 56,593
-- False Negative (FN): 18
+| Actual \ Predicted | Fraud (1) | Normal (0) |
+|---|---:|---:|
+| Fraud (1) | **TP = 90** | FN = 18 |
+| Normal (0) | FP = 82 | **TN = 56,588** |
+
+This 2x2 table shows prediction counts on the test set: the model correctly identified 90 frauds (TP) and missed 18 (FN); it incorrectly flagged 82 normal transactions as fraud (FP) and correctly labeled 56,588 normal transactions (TN).
 
 Cross-validated prototype performance (from `prototype_config`):
 
@@ -139,8 +156,9 @@ Cross-validated prototype performance (from `prototype_config`):
 
 Notes:
 
-- These numbers are a snapshot and will change when you retrain the model. Run `python main.py` to produce a fresh `metrics.json` in `models/production/xgboost_model/`.
-- If you need ROC AUC / PR AUC values for the current trained model, re-run the pipeline with the extended evaluation enabled (the training script will add `auc_roc` and `auc_pr` to the metrics file when available).
+-- These numbers are a snapshot and will change when you retrain the model. Run `python main.py` to produce a fresh `metrics.json` in `models/production/xgboost_model/`.
+-- Note: recall on the test set is ~0.80 (the model recovers around 80% of fraud cases). Tune or re-evaluate if you need a different precision/recall trade-off.
+-- If you need ROC AUC / PR AUC values for the current trained model, re-run the pipeline with the extended evaluation enabled (the training script will add `auc_roc` and `auc_pr` to the metrics file when available).
 
 ## Development notes and assumptions
 
