@@ -212,7 +212,7 @@ def run_training(config_path, train_df, test_df, model_path, spark):
         "metrics": metrics
     }
     
-    metrics_path = os.path.join(model_path, "metrics.json")
+    metrics_path = os.path.join(model_path, "metrics.json")  
     with open(metrics_path, 'w') as f:
         json.dump(metrics_data, f, indent=2)
     
