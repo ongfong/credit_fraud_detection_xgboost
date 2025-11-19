@@ -37,7 +37,7 @@ def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spa
     print(f"   Records: {record_count:,}")
 
     print(f"\n✂️  Splitting data (80/20) BEFORE transformation...")
-    train_raw, test_raw = silver_df.randomSplit([0.8, 0.2], seed=42)
+    train_raw, test_raw = silver_df.randomSplit([0.8, 0.2], seed=42) ## it will customize y ratio here
 
     train_count = train_raw.count()
     test_count = test_raw.count()

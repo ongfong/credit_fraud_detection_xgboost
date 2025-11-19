@@ -1,29 +1,29 @@
 # ===============================
 # 📁 CONFIG FILES
 # ===============================
-configs/
-*.json
+# configs/
+# *.json
 
 # ===============================
 # 📊 DATA FILES
 # ===============================
-data/
-data/raw/
-data/bronze/
-data/silver/
-data/gold/
-*.csv
-*.xlsx
+# data/
+# data/raw/
+/bronze/
+/silver/
+/gold/
+# *.csv
+# *.xlsx
 
 # ===============================
 # 🤖 MODELS
 # ===============================
-models/
-models/pipeline/
-models/production/
-*.joblib
-*.pkl
-*.h5
+# models/
+# models/pipeline/
+# models/production/
+# *.joblib
+# *.pkl
+# *.h5
 
 # ===============================
 # ⚙️ PYTHON & SYSTEM FILES

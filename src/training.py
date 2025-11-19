@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from pyspark.sql.functions import sum, when, col
 
 try:
     from xgboost.spark import SparkXGBClassifier
@@ -13,81 +14,64 @@ from .config_adapter import ConfigAdapter
 
 def evaluate_model(predictions, label_col="Class"):
 
-    print("\n📊 Evaluating model...")
+    print("\n📊 Evaluating model (Optimized)...")
+    # 1. Calculate confusion matrix components
     
-    try:
-        # Count predictions
-        total = predictions.count()
-        
-        if total == 0:
-            print("⚠️  No predictions to evaluate")
-            return {
-                "accuracy": None,
-                "confusion_matrix": {
-                    "true_positive": 0,
-                    "false_positive": 0,
-                    "true_negative": 0,
-                    "false_negative": 0
-                }
-            }
-        
-        # Accuracy
-        correct = predictions.filter(f"{label_col} = prediction").count()
-        accuracy = float(correct) / float(total)
-        
-        # Confusion matrix
-        tp = predictions.filter(f"{label_col} = 1 AND prediction = 1").count()
-        fp = predictions.filter(f"{label_col} = 0 AND prediction = 1").count()
-        tn = predictions.filter(f"{label_col} = 0 AND prediction = 0").count()
-        fn = predictions.filter(f"{label_col} = 1 AND prediction = 0").count()
-        
-        # Calculate additional metrics
-        precision = float(tp) / float(tp + fp) if (tp + fp) > 0 else 0.0
-        recall = float(tp) / float(tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-        
-        metrics = {
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
-            "confusion_matrix": {
-                "true_positive": int(tp),
-                "false_positive": int(fp),
-                "true_negative": int(tn),
-                "false_negative": int(fn)
-            }
-        }
-        
-        print(f"\n   Results (on {total:,} predictions):")
-        print(f"   ├─ Accuracy:  {metrics['accuracy']:.4f}")
-        print(f"   ├─ Precision: {metrics['precision']:.4f}")
-        print(f"   ├─ Recall:    {metrics['recall']:.4f}")
-        print(f"   └─ F1 Score:  {metrics['f1_score']:.4f}")
-        
-        print(f"\n   Confusion Matrix:")
-        print(f"   ├─ TP: {tp:>6}  FP: {fp:>6}")
-        print(f"   └─ FN: {fn:>6}  TN: {tn:>6}")
-        
-        return metrics
-        
-    except Exception as e:
-        print(f"❌ Evaluation failed: {e}")
-        import traceback
-        traceback.print_exc()
-        
+    metrics_row = predictions.agg(
+        sum(when((col(label_col) == 1) & (col("prediction") == 1), 1).otherwise(0)).alias("tp"),
+        sum(when((col(label_col) == 0) & (col("prediction") == 1), 1).otherwise(0)).alias("fp"),
+        sum(when((col(label_col) == 0) & (col("prediction") == 0), 1).otherwise(0)).alias("tn"),
+        sum(when((col(label_col) == 1) & (col("prediction") == 0), 1).otherwise(0)).alias("fn"),
+        sum(when(col(label_col) == col("prediction"), 1).otherwise(0)).alias("correct")
+    ).collect()[0]
+
+    tp = metrics_row['tp']
+    fp = metrics_row['fp']
+    tn = metrics_row['tn']
+    fn = metrics_row['fn']
+    correct = metrics_row['correct']
+    
+    total = tp + fp + tn + fn
+    
+    # 2. Check for edge cases
+    if total == 0:
+        print("⚠️  No predictions to evaluate")
         return {
             "accuracy": None,
-            "precision": None,
-            "recall": None,
-            "f1_score": None,
-            "confusion_matrix": {
-                "true_positive": 0,
-                "false_positive": 0,
-                "true_negative": 0,
-                "false_negative": 0
-            }
+            "confusion_matrix": {"true_positive": 0, "false_positive": 0, "true_negative": 0, "false_negative": 0}
         }
+    
+    # 3. Calculate metrics
+    accuracy = float(correct) / float(total)
+    
+    precision = float(tp) / float(tp + fp) if (tp + fp) > 0 else 0.0
+    recall = float(tp) / float(tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    
+    metrics = {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "confusion_matrix": {
+            "true_positive": int(tp),
+            "false_positive": int(fp),
+            "true_negative": int(tn),
+            "false_negative": int(fn)
+        }
+    }
+    
+    print(f"\n   Results (on {total:,} predictions):")
+    print(f"   ├─ Accuracy:  {metrics['accuracy']:.4f}")
+    print(f"   ├─ Precision: {metrics['precision']:.4f}")
+    print(f"   ├─ Recall:    {metrics['recall']:.4f}")
+    print(f"   └─ F1 Score:  {metrics['f1_score']:.4f}")
+    
+    print(f"\n   Confusion Matrix:")
+    print(f"   ├─ TP: {tp:>6,}  FP: {fp:>6,}")
+    print(f"   └─ FN: {fn:>6,}  TN: {tn:>6,}")
+
+    return metrics
 
 def run_training(config_path, train_df, test_df, model_path, spark):
 
@@ -109,6 +93,9 @@ def run_training(config_path, train_df, test_df, model_path, spark):
     xgb_params = config_adapter.get_xgboost_params()
     target_col = config_adapter.get_target_column()
     
+    train_df.cache() 
+    test_df.cache()
+    
     train_count = train_df.count()
     test_count = test_df.count()
 
@@ -116,14 +103,12 @@ def run_training(config_path, train_df, test_df, model_path, spark):
     normal_count = train_df.filter(f"{target_col} = 0").count()
 
     total = train_count + test_count
-    scale_pos_weight = normal_count / fraud_count
 
     print(f"Total: {total:,}")
     print(f"normal_count: {normal_count:,}")
     print(f"fraud_count: {fraud_count:,}")
     print(f"Train dataset: {train_count:,}")
     print(f"Test dataset:  {test_count:,}")
-    print(f"Scale_pos_weight: {scale_pos_weight:,}")
 
     # ========================================
     # 4. Create XGBoost Classifier
@@ -145,9 +130,10 @@ def run_training(config_path, train_df, test_df, model_path, spark):
             prediction_col="prediction",
             num_workers=1,
             use_gpu=False,
-            scale_pos_weight=scale_pos_weight,
             num_boost_round=num_round,
-            **xgb_params
+            **xgb_params,
+            scale_pos_weight=200, #tuning for imbalanced data
+            random_state=42
         )
     except Exception as e:
         raise ValueError(f"Failed to create XGBoost classifier: {e}")
@@ -207,7 +193,7 @@ def run_training(config_path, train_df, test_df, model_path, spark):
         "config": config_adapter.get_all(),
         "xgboost_params": {
             **xgb_params,
-            "num_boost_round": num_round
+            "num_boost_round": num_round,
         },
         "metrics": metrics
     }
