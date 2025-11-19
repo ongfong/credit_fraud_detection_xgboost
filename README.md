@@ -13,22 +13,23 @@ A production-ready Machine Learning pipeline built with **PySpark**, **Delta Lak
 
 In credit card fraud detection, the primary goal is to minimize financial loss by catching as many fraudulent transactions as possible (**High Recall**) while maintaining a reasonable customer experience (**Manageable Precision**).
 
-### Key Results (Test Set Performance)
-* **Recall (Fraud Capture Rate):** **83.3%**
-    * *Impact:* The model successfully identified **90 out of 108** fraud cases in the unseen test set.
-* **Precision:** **52.3%**
-    * *Trade-off:* For every ~2 alerts, 1 is actual fraud. This is an acceptable operational cost compared to the high cost of missed fraud.
-* **ROC-AUC:** **0.958**
+### Key Results (Test Set Performance after **scale_pos_weight** Tuning)
+* **Recall (Fraud Capture Rate):** **83.9%**
+    * *Impact:* The model successfully identified **73 out of 87** fraud cases in the unseen test set.
+* **Precision:** **29.2%**
+    * *Trade-off:* For every ~3.4 alerts, 1 is actual fraud. This result represents the optimal balance achieved during the **scale_pos_weight** tuning phase.
+* **F1 Score:** **0.4332**
+* **Accuracy:** **0.9966**
 
 ### 💰 Business Value Analysis
 *Assumptions: Average loss per fraud = \$500 | Cost of manual review per alert = \$10*
 
 | Scenario | Action | Economic Impact |
 | :--- | :--- | :--- |
-| **Without Model** | 108 frauds go unnoticed | **-\$54,000** (Loss) |
-| **With This Model** | Catch 90 frauds, Miss 18 | **-\$9,000** (Loss from missed fraud) |
-| **Operational Cost** | Review 172 alerts (90 TP + 82 FP) | **-\$1,720** (Labor cost) |
-| **Net Savings** | Compared to no model | **+\$43,280 Saved** per batch |
+| **Without Model** | 87 frauds go unnoticed | **-\$43,500** (Loss) |
+| **With This Model** | Catch 73 frauds, Miss 14 | **-\$7,000** (Loss from missed fraud) |
+| **Operational Cost** | Review 250 alerts (73 TP + 177 FP) | **-\$2,500** (Labor cost) |
+| **Net Savings** | Compared to no model | **+\$34,000 Saved** per batch |
 
 > **Verdict:** This pipeline potentially saves the company **~80% of fraud losses** with a manageable workload for the fraud investigation team.
 
@@ -53,11 +54,11 @@ This project implements a **Medallion Architecture** using a data lakehouse appr
 
 | | Predicted Fraud (1) | Predicted Normal (0) |
 | :--- | :---: | :---: |
-| **Actual Fraud (1)** | **90 (TP)** ✅ | 18 (FN) ❌ |
-| **Actual Normal (0)** | 82 (FP) ⚠️ | 56,588 (TN) |
+| **Actual Fraud (1)** | **73 (TP)** ✅ | 14 (FN) ❌ |
+| **Actual Normal (0)** | 177 (FP) ⚠️ | 56,521 (TN) |
 
-* **False Negatives (18):** The most critical metric. Future improvements will aim to reduce this further via threshold tuning.
-* **False Positives (82):** Represents <0.15% of legitimate customers being flagged, minimizing friction.
+* **False Negatives (14):** Low FN count validates the high effectiveness of the model at detecting actual fraud.
+* **False Positives (177):** The focus of final optimization.
 
 ---
 
