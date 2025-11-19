@@ -3,74 +3,96 @@
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
 ![PySpark](https://img.shields.io/badge/PySpark-3.0%2B-orange)
 ![Delta Lake](https://img.shields.io/badge/Delta_Lake-Storage-cyan)
+![XGBoost](https://img.shields.io/badge/Model-XGBoost-red)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
 
-A production-ready Machine Learning pipeline built with **PySpark**, **Delta Lake**, and **XGBoost**. This project demonstrates a scalable architecture (Bronze/Silver/Gold layers) to detect fraudulent transactions in highly imbalanced datasets.
+A scalable, production-ready Machine Learning pipeline built with **PySpark**, **Delta Lake**, and **XGBoost**. This project demonstrates an **MLOps-focused architecture** (Bronze/Silver/Gold layers) to effectively detect fraudulent transactions in highly imbalanced datasets.
 
 ---
 
 ## 🎯 Executive Summary & Business Impact
 
-In credit card fraud detection, the primary goal is to minimize financial loss by catching as many fraudulent transactions as possible (**High Recall**) while maintaining a reasonable customer experience (**Manageable Precision**).
+The core challenge in credit card fraud detection is the class imbalance (≈600:1). The strategy prioritizes **High Recall** to minimize financial loss, while managing **Precision** to maintain an acceptable operational cost.
 
-### Key Results (Test Set Performance after **scale_pos_weight** Tuning)
+### Key Results (Test Set Performance after `scale_pos_weight` Tuning)
+
 * **Recall (Fraud Capture Rate):** **83.9%**
-    * *Impact:* The model successfully identified **73 out of 87** fraud cases in the unseen test set.
+    * *Impact:* The base model successfully identified **73 out of 87** total fraud cases in the unseen test set.
 * **Precision:** **29.2%**
-    * *Trade-off:* For every ~3.4 alerts, 1 is actual fraud. This result represents the optimal balance achieved during the **scale_pos_weight** tuning phase.
+    * *Trade-off:* For every **~3.4 alerts**, 1 is actual fraud. This result represents the optimal base model balance achieved before final operational tuning.
 * **F1 Score:** **0.4332**
 * **Accuracy:** **0.9966**
 
 ### 💰 Business Value Analysis
-*Assumptions: Average loss per fraud = \$500 | Cost of manual review per alert = \$10*
 
 | Scenario | Action | Economic Impact |
 | :--- | :--- | :--- |
-| **Without Model** | 87 frauds go unnoticed | **-\$43,500** (Loss) |
-| **With This Model** | Catch 73 frauds, Miss 14 | **-\$7,000** (Loss from missed fraud) |
-| **Operational Cost** | Review 250 alerts (73 TP + 177 FP) | **-\$2,500** (Labor cost) |
-| **Net Savings** | Compared to no model | **+\$34,000 Saved** per batch |
+| Without Model | 87 frauds go unnoticed | **-$43,500** (Loss) |
+| With This Model | Catch 73 frauds, Miss 14 | **-$7,000** (Loss from missed fraud) |
+| Operational Cost | Review 250 alerts (73 TP + 177 FP) | **-$2,500** (Labor cost) |
+| **Net Savings** | Compared to no model | **+$34,000 Saved** per batch |
 
-> **Verdict:** This pipeline potentially saves the company **~80% of fraud losses** with a manageable workload for the fraud investigation team.
+> **Verdict:** This pipeline provides a net saving of **~$34,000** per batch, confirming that the cost of manual review is significantly lower than the cost of missed fraud. The base model saves **~80% of fraud losses**.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## ⚙️ Model Tuning Strategy: Achieving Balance
 
-This project implements a **Medallion Architecture** using a data lakehouse approach:
+This section details the **two-stage optimization strategy** implemented to overcome the severe class imbalance (Normal:Fraud ratio ≈ 600:1) and build a model suitable for operational use.
 
-1.  **Ingestion (Bronze):** Raw data ingestion into Delta Lake.
-2.  **Preprocessing (Silver):** Cleaning and schema validation.
-3.  **Feature Engineering:** Spark ML Pipelines (serialized for inference).
-4.  **Modeling:** Distributed training with **XGBoost on Spark**.
-5.  **Deployment:** Model artifacts exported to `models/production/`.
-6.  **Reproducibility:** Fully containerized with **Docker** & **Docker Compose**.
+### Stage 1: Iterative `scale_pos_weight` Tuning
+
+We focused on tuning the `scale_pos_weight` parameter in XGBoost to artificially increase the cost of **False Negatives** (missing a fraud).
+
+| Phase | `scale_pos_weight` | Precision | Recall | False Positive (FP) |
+| :--- | :---: | :---: | :---: | :---: |
+| Initial (Ratio) | 596.31 | 0.087 | 0.900 | 847 |
+| **Optimal Base** | **200.00** | **0.292** | **0.839** | **177** |
+
+> **Process Note:** Reducing the weight from the calculated ratio (596.31) to 200.00 provided the highest F1 Score (0.4332) while stabilizing the False Positive rate (from 847 to 177), establishing a strong base model.
+
+### Stage 2: Final Threshold Optimization (The Next Step)
+
+The high-Recall base model is now ready for final tuning to meet the operational Precision target (e.g., ≈50%) required by the business.
+
+| Action | Goal | Rationale |
+| :--- | :--- | :--- |
+| **Adjust Threshold** | Reduce False Positives from **177** to **~85-90** | Meet the operational target (Precision ≈ 50%) for the fraud investigation team. |
+| **Method** | Adjust prediction threshold from default 0.50 to a higher value (e.g., 0.75-0.85). | Leverage the strong probability outputs of the base model (scale\_pos\_weight = 200.00). |
+
+---
+
+## 🛠️ Technical Architecture & Key Features
+
+This project emphasizes scalability and reproducibility, key aspects of MLOps.
+
+* **Data Lakehouse:** Implementation of a **Medallion Architecture** using **Delta Lake** (Bronze -> Silver -> Gold tables) for reliable, versioned data storage.
+* **Scalable ETL:** Batch data transformation and feature engineering handled efficiently using **PySpark**.
+* **ML Pipeline:** The Spark feature pipeline is **serialized** (`models/pipeline/feature_pipeline`) to ensure consistent, production-ready feature calculation during both training and inference.
+* **Containerization:** Full environment packaging using **Docker** and **Docker Compose** for reproducible execution.
 
 ---
 
 ## 📊 Model Performance Details
 
-**Confusion Matrix (Test Set Snapshot):**
+**Confusion Matrix (Snapshot post-Tuning):**
 
 | | Predicted Fraud (1) | Predicted Normal (0) |
 | :--- | :---: | :---: |
 | **Actual Fraud (1)** | **73 (TP)** ✅ | 14 (FN) ❌ |
-| **Actual Normal (0)** | 177 (FP) ⚠️ | 56,521 (TN) |
+| **Actual Normal (0)** | 177 (FP) ⚠️ | 56,514 (TN) |
 
-* **False Negatives (14):** Low FN count validates the high effectiveness of the model at detecting actual fraud.
-* **False Positives (177):** The focus of final optimization.
+* **False Negatives (14):** The model only missed 14 cases, highlighting its strength in minimizing loss.
+* **False Positives (177):** These are the focus for the next step (Threshold Tuning) to reduce the operational workload.
 
 ---
 
 ## 📂 Repository Structure
 
 ```text
-├── .github/                # CI/CD configurations
 ├── configs/                # Pipeline configurations (JSON)
 ├── data/                   # Delta Lake storage (Bronze/Silver) & Raw data
 ├── models/                 # Saved models & Feature Pipelines
 ├── notebooks/              # EDA & Prototyping (Jupyter)
-├── src/                    # Source code (Ingest, Preprocess, Feature, Train)
-├── main.py                 # Pipeline Orchestrator
-├── Dockerfile              # Docker image definition
-└── docker-compose.yml      # Container orchestration
+├── src/                    # Implementation modules (Ingest, Preprocess, Feature, Train)
+└── main.py                 # Pipeline Orchestrator Entrypoint
