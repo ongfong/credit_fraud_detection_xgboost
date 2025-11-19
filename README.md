@@ -15,7 +15,8 @@ A scalable, production-ready Machine Learning pipeline built with **PySpark**, *
 The core challenge in credit card fraud detection is the class imbalance (≈600:1). The strategy prioritizes **High Recall** to minimize financial loss, while managing **Precision** to maintain an acceptable operational cost.
 
 ### Key Results (Test Set Performance after `scale_pos_weight` Tuning)
-**Evaluation Date:** **2025-11-19**
+
+📅 **Evaluation Date:** **2025-11-19**
 
 * **Recall (Fraud Capture Rate):** **83.9%**
     * *Impact:* The base model successfully identified **73 out of 87** total fraud cases in the unseen test set.
