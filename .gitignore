@@ -9,9 +9,9 @@ configs/
 # ===============================
 data/
 data/raw/
-/bronze/
-/silver/
-/gold/
+data/bronze/
+data/silver/
+data/gold/
 *.csv
 *.xlsx
 
