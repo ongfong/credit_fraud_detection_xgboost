@@ -15,8 +15,8 @@ A scalable, production-ready Machine Learning pipeline built with **PySpark**, *
 The core challenge in credit card fraud detection is the class imbalance (≈600:1). The strategy prioritizes **High Recall** to minimize financial loss, while managing **Precision** to maintain an acceptable operational cost.
 
 ### Key Results (Test Set Performance after `scale_pos_weight` Tuning)
+**Evaluation Date:** **2025-11-19**
 
-* **Evaluation Date:** **2025-11-19** 📅
 * **Recall (Fraud Capture Rate):** **83.9%**
     * *Impact:* The base model successfully identified **73 out of 87** total fraud cases in the unseen test set.
 * **Precision:** **29.2%**
@@ -41,7 +41,7 @@ The core challenge in credit card fraud detection is the class imbalance (≈600
 
 The project utilizes a publicly available dataset of credit card transactions for European cardholders.
 
-* **Source:** Kaggle: Credit Card Fraud Detection
+* **Source:** [Kaggle: Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
 * **Provider:** Worldline and ULB (Université Libre de Bruxelles)
 * **Characteristics:** Contains transactions that occurred over two days, highly imbalanced (≈0.172% fraud rate), and features (V1-V28) are Principal Component Analysis (PCA) transformed for privacy.
 * **Storage Location:** `data/raw/creditcard_raw.csv`
