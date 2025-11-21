@@ -55,40 +55,27 @@ The project utilizes a publicly available dataset of credit card transactions fo
 
 ---
 
-## ⚙️ Model Configuration & Performance
+## ⚙️ Model Configuration
 
-### XGBoost Hyperparameters (Production Model)
+**XGBoost Hyperparameters:**
+* `scale_pos_weight: 596.32` — Handles extreme class imbalance
+* `max_depth: 5`, `n_estimators: 100` — Prevents overfitting
+* `subsample: 0.8`, `colsample_bytree: 0.8` — Improves generalization
 
-The model uses carefully tuned parameters optimized for the severe class imbalance:
-
-| Parameter | Value | Purpose |
-| :--- | :---: | :--- |
-| `scale_pos_weight` | **596.32** | Addresses class imbalance by penalizing missed fraud |
-| `learning_rate` | **0.1** | Controls training step size |
-| `max_depth` | **5** | Limits tree complexity to prevent overfitting |
-| `n_estimators` | **100** | Number of boosting rounds |
-| `subsample` | **0.8** | Row sampling ratio per tree |
-| `colsample_bytree` | **0.8** | Feature sampling ratio per tree |
-| `random_state` | **42** | Ensures reproducibility |
-
-### Feature Engineering Pipeline
-
-**Preprocessing Strategy:**
-* **RobustScaler** applied to `Amount` feature (resistant to outliers)
-* **Passthrough columns:** Time, V1-V28 (PCA-transformed features used as-is)
-* **Total features:** 30 (Time + V1-V28 + Amount)
+**Feature Engineering:**
+* RobustScaler on `Amount` (outlier-resistant)
+* 28 PCA-transformed features (V1-V28) + Time
+* Total: 30 features
 
 ---
 
-## 🛠️ Technical Architecture & Key Features
+## 🛠️ Technical Architecture
 
-This project emphasizes scalability and reproducibility, key aspects of MLOps.
-
-* **Data Lakehouse:** Implementation of a **Medallion Architecture** using **Delta Lake** (Bronze → Silver → Gold tables) for reliable, versioned data storage.
-* **Scalable ETL:** Batch data transformation and feature engineering handled efficiently using **PySpark**.
-* **ML Pipeline:** The Spark feature pipeline is **serialized** (`models/pipeline/feature_pipeline`) to ensure consistent, production-ready feature calculation during both training and inference.
-* **Framework:** `xgboost.spark.SparkXGBClassifier` for distributed training and inference.
-* **Containerization:** Full environment packaging using **Docker** and **Docker Compose** for reproducible execution.
+* **Data Lakehouse:** Medallion Architecture (Bronze → Silver → Gold) using **Delta Lake**
+* **Processing:** **PySpark** for scalable ETL and feature engineering
+* **ML Framework:** `xgboost.spark.SparkXGBClassifier` for distributed training
+* **Deployment:** **Docker** containers for reproducibility
+* **Pipeline:** Serialized feature transformations (`models/pipeline/feature_pipeline`)
 
 ---
 
@@ -140,35 +127,9 @@ The model demonstrated robust performance during the prototype phase with 5-fold
 │   └── pipeline/          # Feature transformation pipeline
 ├── notebooks/              # EDA & prototyping (Jupyter)
 ├── src/                    # Core implementation modules
-│   ├── ingest.py          # Data ingestion
-│   ├── preprocess.py      # Data cleaning
-│   ├── features.py        # Feature engineering
-│   └── train.py           # Model training
-└── main.py                 # Pipeline orchestrator
+│   ├── ingestion.py       # Data ingestion
+│   ├── preprocessing.py   # Data cleaning
+│   ├── features_engineering.py  # Feature engineering
+│   └── training.py        # Model training
+└── main.py                # Pipeline orchestrator
 ```
-
----
-
-## 🔧 Technology Stack
-
-| Component | Technology | Version |
-| :--- | :--- | :--- |
-| Language | Python | 3.10.18 |
-| ML Framework | XGBoost | Spark-enabled |
-| ML Library | Scikit-learn | 1.3.2 |
-| Data Processing | PySpark | 3.0+ |
-| Data Storage | Delta Lake | Latest |
-| Containerization | Docker | Latest |
-
----
-
-## 🎯 Production Readiness
-
-This model is production-ready with the following characteristics:
-
-✅ **High Recall (83.5%)** — Captures most fraud cases  
-✅ **Strong Precision (75.2%)** — Minimizes false alarms  
-✅ **Balanced F1 (0.79)** — Optimal trade-off for operations  
-✅ **Reproducible Pipeline** — Containerized and version-controlled  
-✅ **Scalable Architecture** — Built on distributed computing frameworks  
-✅ **Cost-Effective** — Delivers $37K+ savings per batch with 37.6x ROI
