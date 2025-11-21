@@ -27,6 +27,21 @@ The core challenge in credit card fraud detection is the extreme class imbalance
 
 ### 💰 Business Value Analysis
 
+**Cost Assumptions:**
+* Average fraud transaction value: **$500** per case
+* Investigation cost per alert: **$10** per review
+
+| Scenario | Action | Economic Impact |
+| :--- | :--- | :--- |
+| Without Model | 91 frauds undetected (91 × $500) | **-$45,500** (Total Loss) |
+| With This Model | Catch 76 frauds, Miss 15 (15 × $500) | **-$7,500** (Residual Loss) |
+| Operational Cost | Review 101 alerts: 76 TP + 25 FP (101 × $10) | **-$1,010** (Investigation Cost) |
+| **Net Savings** | Fraud prevention benefit | **+$36,990 Saved** per batch |
+
+> **Business Impact:** This model delivers **$37,000 in net savings** per evaluation batch, preventing **81% of potential fraud losses** (76/91 cases) while maintaining a lean review workload of just 101 alerts. The **75% precision rate** ensures the fraud investigation team receives high-quality alerts, with only 1 false alarm per 3 real fraud cases.
+>
+> **ROI Calculation:** For every $1 spent on investigation ($1,010), the model prevents $38 in fraud losses ($38,000), delivering a **37.6x return on investment**.
+
 | Scenario | Action | Economic Impact |
 | :--- | :--- | :--- |
 | Without Model | 91 frauds undetected | **-$45,500** (Total Loss) |
