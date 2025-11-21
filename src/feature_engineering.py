@@ -4,7 +4,6 @@ from pyspark.ml import Pipeline
 from delta.tables import DeltaTable
 from .config_adapter import ConfigAdapter 
 
-
 def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spark):
  
     print("\n" + "="*70)

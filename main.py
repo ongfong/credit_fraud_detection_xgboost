@@ -1,6 +1,4 @@
-from pyspark.sql import SparkSession
 from src import ingestion, preprocessing, feature_engineering, training
-from delta import configure_spark_with_delta_pip
 from spark_config import get_local_spark
 import sys 
 

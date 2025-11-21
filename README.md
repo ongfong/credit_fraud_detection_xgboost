@@ -1,6 +1,6 @@
 # 💳 End-to-End Credit Card Fraud Detection Pipeline
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![PySpark](https://img.shields.io/badge/PySpark-3.0%2B-orange)
 ![Delta Lake](https://img.shields.io/badge/Delta_Lake-Storage-cyan)
 ![XGBoost](https://img.shields.io/badge/Model-XGBoost-red)
@@ -12,98 +12,192 @@ A scalable, production-ready Machine Learning pipeline built with **PySpark**, *
 
 ## 🎯 Executive Summary & Business Impact
 
-The core challenge in credit card fraud detection is the class imbalance (≈600:1). The strategy prioritizes **High Recall** to minimize financial loss, while managing **Precision** to maintain an acceptable operational cost.
+The core challenge in credit card fraud detection is the extreme class imbalance (≈600:1 ratio). This pipeline addresses the challenge by optimizing for **High Recall** to capture maximum fraud cases while maintaining strong **Precision** to keep operational costs manageable.
 
-### Key Results (Test Set Performance after `scale_pos_weight` Tuning)
+### Key Results (Production Model Performance)
 
-📅 **Evaluation Date:** **2025-11-19**
+📅 **Evaluation Date:** **2025-11-21**
 
-* **Recall (Fraud Capture Rate):** **83.9%**
-    * *Impact:* The base model successfully identified **73 out of 87** total fraud cases in the unseen test set.
-* **Precision:** **29.2%**
-    * *Trade-off:* For every **~3.4 alerts**, 1 is actual fraud. This result represents the optimal base model balance achieved before final operational tuning.
-* **F1 Score:** **0.4332**
-* **Accuracy:** **0.9966**
+* **Recall (Fraud Capture Rate):** **83.5%**
+    * *Impact:* Successfully identified **76 out of 91** fraud cases in the test set.
+* **Precision:** **75.2%**
+    * *Efficiency:* For every **1.33 alerts**, 1 is confirmed fraud—delivering excellent operational balance.
+* **F1 Score:** **0.7917**
+* **Accuracy:** **99.93%**
 
 ### 💰 Business Value Analysis
 
 | Scenario | Action | Economic Impact |
 | :--- | :--- | :--- |
-| Without Model | 87 frauds go unnoticed | **-$43,500** (Loss) |
-| With This Model | Catch 73 frauds, Miss 14 | **-$7,000** (Loss from missed fraud) |
-| Operational Cost | Review 250 alerts (73 TP + 177 FP) | **-$2,500** (Labor cost) |
-| **Net Savings** | Compared to no model | **+$34,000 Saved** per batch |
+| Without Model | 91 frauds undetected | **-$45,500** (Total Loss) |
+| With This Model | Catch 76 frauds, Miss 15 | **-$7,500** (Residual Loss) |
+| Operational Cost | Review 101 alerts (76 TP + 25 FP) | **-$1,010** (Investigation Cost) |
+| **Net Savings** | Fraud prevention benefit | **+$36,990 Saved** per batch |
 
-> **Verdict:** This pipeline provides a net saving of **~$34,000** per batch, confirming that the cost of manual review is significantly lower than the cost of missed fraud. The base model saves **~80% of fraud losses**.
+> **Business Impact:** This model delivers **$37,000 in net savings** per evaluation batch, preventing **81% of potential fraud losses** while maintaining a lean review workload. The 75% precision rate ensures the fraud investigation team receives high-quality alerts.
 
 ---
 
 ## 💾 Data Source
 
-The project utilizes a publicly available dataset of credit card transactions for European cardholders.
+This project uses a real-world dataset of European credit card transactions.
 
 * **Source:** [Kaggle: Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
 * **Provider:** Worldline and ULB (Université Libre de Bruxelles)
-* **Characteristics:** Contains transactions that occurred over two days, highly imbalanced (≈0.172% fraud rate), and features (V1-V28) are Principal Component Analysis (PCA) transformed for privacy.
+* **Dataset Profile:** Two-day transaction window with severe class imbalance (≈0.172% fraud rate). Features V1-V28 are PCA-transformed for cardholder privacy protection.
 * **Storage Location:** `data/raw/creditcard_raw.csv`
 
-## ⚙️ Model Tuning Strategy: Achieving Balance
+---
 
-This section details the **two-stage optimization strategy** implemented to overcome the severe class imbalance (Normal:Fraud ratio ≈ 600:1) and build a model suitable for operational use.
+## ⚙️ Model Architecture & Configuration
 
-### Stage 1: Iterative `scale_pos_weight` Tuning
+### XGBoost Hyperparameters (Production Model)
 
-We focused on tuning the `scale_pos_weight` parameter in XGBoost to artificially increase the cost of **False Negatives** (missing a fraud).
+The model uses carefully tuned parameters to balance performance and generalization:
 
-| Phase | `scale_pos_weight` | Precision | Recall | False Positive (FP) |
-| :--- | :---: | :---: | :---: | :---: |
-| Initial (Ratio) | 596.31 | 0.087 | 0.900 | 847 |
-| **Optimal Base** | **200.00** | **0.292** | **0.839** | **177** |
+| Parameter | Value | Purpose |
+| :--- | :---: | :--- |
+| `scale_pos_weight` | **596.32** | Addresses class imbalance by penalizing missed fraud |
+| `learning_rate` | **0.1** | Controls training step size |
+| `max_depth` | **5** | Limits tree complexity to prevent overfitting |
+| `n_estimators` | **100** | Number of boosting rounds |
+| `subsample` | **0.8** | Row sampling ratio per tree |
+| `colsample_bytree` | **0.8** | Feature sampling ratio per tree |
+| `random_state` | **42** | Ensures reproducibility |
 
-> **Process Note:** Reducing the weight from the calculated ratio (596.31) to 200.00 provided the highest F1 Score (0.4332) while stabilizing the False Positive rate (from 847 to 177), establishing a strong base model.
+### Feature Engineering Pipeline
 
-### Stage 2: Final Threshold Optimization (The Next Step)
+**Preprocessing Strategy:**
+* **RobustScaler** applied to `Amount` feature (resistant to outliers)
+* **Passthrough columns:** Time, V1-V28 (PCA-transformed features used as-is)
+* **Total features:** 30 (Time + V1-V28 + Amount)
 
-The high-Recall base model is now ready for final tuning to meet the operational Precision target (e.g., ≈50%) required by the business.
-
-| Action | Goal | Rationale |
-| :--- | :--- | :--- |
-| **Adjust Threshold** | Reduce False Positives from **177** to **~85-90** | Meet the operational target (Precision ≈ 50%) for the fraud investigation team. |
-| **Method** | Adjust prediction threshold from default 0.50 to a higher value (e.g., 0.75-0.85). | Leverage the strong probability outputs of the base model (scale\_pos\_weight = 200.00). |
+**Pipeline Architecture:**
+```
+Input → ColumnTransformer → XGBoost Classifier → Predictions
+         (RobustScaler)      (Spark-enabled)
+```
 
 ---
 
-## 🛠️ Technical Architecture & Key Features
+## 📊 Model Performance Analysis
 
-This project emphasizes scalability and reproducibility, key aspects of MLOps.
-
-* **Data Lakehouse:** Implementation of a **Medallion Architecture** using **Delta Lake** (Bronze -> Silver -> Gold tables) for reliable, versioned data storage.
-* **Scalable ETL:** Batch data transformation and feature engineering handled efficiently using **PySpark**.
-* **ML Pipeline:** The Spark feature pipeline is **serialized** (`models/pipeline/feature_pipeline`) to ensure consistent, production-ready feature calculation during both training and inference.
-* **Containerization:** Full environment packaging using **Docker** and **Docker Compose** for reproducible execution.
-
----
-
-## 📊 Model Performance Details
-
-**Confusion Matrix (Snapshot post-Tuning):**
+### Confusion Matrix (Test Set)
 
 | | Predicted Fraud (1) | Predicted Normal (0) |
 | :--- | :---: | :---: |
-| **Actual Fraud (1)** | **73 (TP)** ✅ | 14 (FN) ❌ |
-| **Actual Normal (0)** | 177 (FP) ⚠️ | 56,514 (TN) |
+| **Actual Fraud (1)** | **76 (TP)** ✅ | 15 (FN) ❌ |
+| **Actual Normal (0)** | 25 (FP) ⚠️ | 56,668 (TN) |
 
-* **False Negatives (14):** The model only missed 14 cases, highlighting its strength in minimizing loss.
-* **False Positives (177):** These are the focus for the next step (Threshold Tuning) to reduce the operational workload.
+**Key Insights:**
+* **True Positives (76):** Strong fraud detection capability preventing major losses
+* **False Negatives (15):** Only 16.5% of frauds missed—acceptable for high-stakes scenarios
+* **False Positives (25):** Minimal false alarm rate requiring only 25 unnecessary reviews
+* **True Negatives (56,668):** Legitimate transactions correctly classified with 99.96% specificity
+
+### Performance Comparison: Prototype vs. Production
+
+| Phase | Precision | Recall | F1 Score | Notes |
+| :--- | :---: | :---: | :---: | :--- |
+| **Prototype (5-Fold CV)** | 0.860 | 0.757 | 0.788 | Stratified cross-validation on 22,698 samples |
+| **Production (Test Set)** | 0.752 | 0.835 | 0.792 | Final evaluation on 56,784 samples |
+
+> **Validation Success:** The production model maintains consistent performance with the prototype, demonstrating excellent generalization. The slight precision trade-off for higher recall aligns with the business priority of minimizing fraud losses.
+
+### Cross-Validation Metrics (Development Phase)
+
+* **ROC-AUC:** 0.952 — Excellent discrimination between classes
+* **CV Precision:** 0.860 — High confidence in fraud predictions
+* **CV Recall:** 0.757 — Strong fraud capture rate
+* **Training Set:** 22,698 samples with 0.167% fraud ratio
+
+---
+
+## 🛠️ Technical Architecture & MLOps Features
+
+This production-grade system implements modern MLOps best practices:
+
+### Data Platform
+* **Medallion Architecture:** Bronze (raw) → Silver (cleaned) → Gold (feature-engineered) layers
+* **Storage:** Delta Lake for ACID transactions, versioning, and time-travel capabilities
+* **Processing:** PySpark for distributed data transformation at scale
+
+### ML Pipeline
+* **Framework:** `xgboost.spark.SparkXGBClassifier` for distributed training
+* **Serialization:** Feature pipeline saved to `models/pipeline/feature_pipeline` for inference consistency
+* **Versioning:** Model metadata and configurations tracked with timestamps
+
+### Infrastructure
+* **Containerization:** Docker + Docker Compose for environment reproducibility
+* **Orchestration:** `main.py` serves as the central pipeline coordinator
+* **Scalability:** Designed for horizontal scaling with Spark cluster deployment
 
 ---
 
 ## 📂 Repository Structure
-
 ```text
+.
 ├── configs/                # Pipeline configurations (JSON)
-├── data/                   # Delta Lake storage (Bronze/Silver) & Raw data
-├── models/                 # Saved models & Feature Pipelines
-├── notebooks/              # EDA & Prototyping (Jupyter)
-├── src/                    # Implementation modules (Ingest, Preprocess, Feature, Train)
-└── main.py                 # Pipeline Orchestrator Entrypoint
+├── data/                   # Delta Lake tables & raw data
+│   ├── raw/               # Bronze layer: creditcard_raw.csv
+│   ├── silver/            # Silver layer: cleaned data
+│   └── gold/              # Gold layer: feature-engineered data
+├── models/                 # Trained models & feature pipelines
+│   ├── xgboost_model/     # Serialized XGBoost model
+│   └── pipeline/          # Feature transformation pipeline
+├── notebooks/              # EDA & prototyping (Jupyter)
+├── src/                    # Core implementation modules
+│   ├── ingest.py          # Data ingestion
+│   ├── preprocess.py      # Data cleaning
+│   ├── features.py        # Feature engineering
+│   └── train.py           # Model training
+└── main.py                 # Pipeline orchestrator
+```
+
+---
+
+## 🔧 Technology Stack
+
+| Component | Technology | Version |
+| :--- | :--- | :--- |
+| Language | Python | 3.10.18 |
+| ML Framework | XGBoost | Spark-enabled |
+| ML Library | Scikit-learn | 1.3.2 |
+| Data Processing | PySpark | 3.0+ |
+| Data Storage | Delta Lake | Latest |
+| Containerization | Docker | Latest |
+
+---
+
+## 📈 Model Metadata
+
+* **Model Type:** XGBoost Binary Classifier
+* **Training Timestamp:** 2025-11-21 07:44:11 UTC
+* **Configuration Created:** 2025-11-21 07:18:11 UTC
+* **Pipeline Creator:** prototype_pipeline
+* **Training Dataset:** 22,698 transactions (stratified split)
+* **Test Dataset:** 56,784 transactions
+* **Class Distribution:** ≈0.167% fraud rate (1:596 ratio)
+
+---
+
+## 🎯 Production Readiness
+
+This model is production-ready with the following characteristics:
+
+✅ **High Recall (83.5%)** — Captures most fraud cases  
+✅ **Strong Precision (75.2%)** — Minimizes false alarms  
+✅ **Balanced F1 (0.79)** — Optimal trade-off for operations  
+✅ **Reproducible Pipeline** — Containerized and version-controlled  
+✅ **Scalable Architecture** — Built on distributed computing frameworks  
+✅ **Cost-Effective** — Delivers $37K+ savings per batch
+
+---
+
+## 📝 Future Enhancements
+
+* **Threshold Optimization:** Fine-tune decision threshold for specific business requirements
+* **Real-time Inference:** Deploy as streaming service for live transaction scoring
+* **Model Monitoring:** Implement drift detection and performance tracking
+* **Feature Store:** Centralize feature definitions for consistency across models
+* **A/B Testing:** Framework for comparing model versions in production

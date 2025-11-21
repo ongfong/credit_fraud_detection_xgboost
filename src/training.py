@@ -119,7 +119,7 @@ def run_training(config_path, train_df, test_df, model_path, spark):
     num_round = xgb_params.pop("num_round", 100)
     
     # Remove unsupported params
-    unsupported = ["objective", "eval_metric", "tree_method","scale_pos_weight"]
+    unsupported = ["objective", "eval_metric", "tree_method"]
     for key in unsupported:
         xgb_params.pop(key, None)
     
@@ -132,7 +132,7 @@ def run_training(config_path, train_df, test_df, model_path, spark):
             use_gpu=False,
             num_boost_round=num_round,
             **xgb_params,
-            scale_pos_weight=200, #tuning for imbalanced data
+            # scale_pos_weight=200, #tuning for imbalanced data
             random_state=42
         )
     except Exception as e:
