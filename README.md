@@ -110,7 +110,9 @@ Input → ColumnTransformer → XGBoost Classifier → Predictions
 
 > **Validation Success:** The production model maintains consistent performance with the prototype, demonstrating excellent generalization. The slight precision trade-off for higher recall aligns with the business priority of minimizing fraud losses.
 
-### Cross-Validation Metrics (Development Phase)
+### Cross-Validation Metrics (Prototype Phase)
+
+The model demonstrated robust performance during the prototype phase with 5-fold stratified cross-validation:
 
 * **ROC-AUC:** 0.952 — Excellent discrimination between classes
 * **CV Precision:** 0.860 — High confidence in fraud predictions
