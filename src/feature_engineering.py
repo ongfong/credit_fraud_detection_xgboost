@@ -4,6 +4,7 @@ from pyspark.ml import Pipeline
 from delta.tables import DeltaTable
 from .config_adapter import ConfigAdapter 
 
+
 def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spark):
  
     print("\n" + "="*70)
@@ -37,12 +38,12 @@ def run_feature_engineer(config_path, silver_table_name, pipeline_save_path, spa
     print(f"   Records: {record_count:,}")
 
     print(f"\n✂️  Splitting data (80/20) BEFORE transformation...")
-    train_raw, test_raw = silver_df.randomSplit([0.8, 0.2], seed=42) ## it will customize y ratio here
+    train_raw, test_raw = silver_df.randomSplit([0.8, 0.2], seed=42)
 
-    train_count = train_raw.count()
-    test_count = test_raw.count()
-    print(f"Train: {train_count:,}")
-    print(f"Test: {test_count:,}")
+    print(f"Train total: {train_raw.count():,}")
+    print(f"Test total: {test_raw.count():,}")
+    print(train_raw.groupBy("Class").count().show())
+    print(test_raw.groupBy("Class").count().show())
 
     # ========================================
     # 3. Build Pipeline
