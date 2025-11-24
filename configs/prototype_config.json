@@ -2,8 +2,8 @@
     "model": "XGBoost",
     "tuned_params": {
         "colsample_bytree": 0.8,
-        "learning_rate": 0.1,
-        "max_depth": 5,
+        "learning_rate": 0.2,
+        "max_depth": 7,
         "n_estimators": 100,
         "subsample": 0.8
     },
@@ -60,10 +60,10 @@
         }
     ],
     "prototype_performance": {
-        "cv_roc_auc": 0.9516470180305132,
-        "cv_precision": 0.8603174603174603,
+        "cv_roc_auc": 0.951911013743538,
+        "cv_precision": 0.9314285714285715,
         "cv_recall": 0.7571428571428571,
-        "cv_f1": 0.7883333333333333,
+        "cv_f1": 0.8314285714285713,
         "cv_folds": 5,
         "n_samples": 22698,
         "fraud_ratio": 0.001674156313331571
@@ -101,7 +101,7 @@
         "Amount"
     ],
     "target_column": "Class",
-    "created_date": "2025-11-21T07:18:11.684270",
+    "created_date": "2025-11-24T04:01:40.888007",
     "created_by": "prototype_pipeline",
     "sklearn_version": "1.3.2",
     "python_version": "3.10.18"
