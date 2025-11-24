@@ -118,11 +118,11 @@ Applied **GridSearchCV** on XGBoost using sampled training data (22,698 samples)
 
 | Parameter | Search Range | Best Value |
 | :--- | :--- | :---: |
-| `max_depth` | [3, 5, 7, 10] | **7** |
-| `n_estimators` | [50, 100, 200] | **100** |
+| `n_estimators` | [100, 200] | **100** |
+| `max_depth` | [3, 5, 7] | **7** |
 | `learning_rate` | [0.01, 0.1, 0.2] | **0.2** |
-| `subsample` | [0.6, 0.8, 1.0] | **0.8** |
-| `colsample_bytree` | [0.6, 0.8, 1.0] | **0.8** |
+| `subsample` | [0.8, 1.0] | **0.8** |
+| `colsample_bytree` | [0.8, 1.0] | **0.8** |
 
 **Best Configuration Saved:** `configs/prototype_config.json`
 
